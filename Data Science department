@@ -1,0 +1,133 @@
+#install pacakges 
+install.packages(c("here", "textdata", "tidytext", "tidyverse", "openxlsx", "dplyr"))
+#load packages 
+library(here)
+library(textdata)
+library(tidytext)
+library(tidyverse)
+library(openxlsx)
+library(dplyr)
+setwd("D:/IT_Practice/DS_Dept_Keywords")
+DS_Corpus <- read.xlsx("DS_Text_Corpus.xlsx")
+
+DS_Tidy <- DS_Text_Corpus %>%
+  
+  mutate(doc_id = row_number()) %>%
+  
+  mutate(text = paste(Title, Abstract, sep = " ")) %>%
+  select(doc_id, text)
+
+unigrams <- DS_Tidy
+
+  unnest_tokens(word, text) %>%
+    
+  anti_join(stop_words)
+  
+
+word_counts <- unigrams %>%
+  
+  count(word, sort = TRUE)
+
+bigrams <- DS_Tidy %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  
+  filter(!word1 %in% stop_words$word,
+         !word2 %in% stop_words$word) %>%
+  unite(bigram, word1, word2, sep = " ")
+
+
+word_counts_bigrams <- bigrams %>%
+  
+  
+  count(bigram, sort = TRUE)
+trigrams <- DS_Tidy %>%
+  
+  unnest_tokens(trigram, text, token = "ngrams", n = 3) %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word,
+         !word2 %in% stop_words$word,
+         !word3 %in% stop_words$word) %>%
+  unite(trigram, word1, word2, word3, sep = " ")
+
+
+word_counts_trigrams <- trigrams %>%
+  
+  count(trigram, sort = TRUE)
+custom_stop_words <- tibble(word = c(
+  "llms", "llm", "ai", "xai", "key", "plms", "due", "rl", "1", "vp", "2", "flsys", 
+  "cot", "icl", "kgnn", "aoi", "fl", "gnn", "i.e", "sf", "01", "ap", "auv", "ehrs", 
+  "nlp", "sgcode", "3", "cit", "e.g", "gpi", "kg", "rsfin", "spbd", "tve", "10", 
+  "hoc", "ml", "aqmon", "aws", "cd3", "dl", "ehr", "erm", "har", "isfs", "ppi", 
+  "qa", "usv", "xllm", "zgd", "zms", "100", "aae", "ad", "api", "br", "dnn", "dnns", 
+  "dns", "dmg", "f1", "graph500", "ii", "https", "kgs", "ipir", "ptss", "search", 
+  "4llm", "tnfo", "uci", "url", "vits", "0", "11", "1156x", "13.8", "19", "22", 
+  "2368x", "29", "3d", "40", "42", "5.6", "50.67", "52", "63", "74", "8", "80", 
+  "8480", "86", "90", "97", "abcd", "ag", "ct", "dp", "gnns", "iid", "iii", "ieee", 
+  "ljp", "llm's", "ltr", "mdds", "mfgan", "ms", "nas", "nlu", "np", "pm2.5", "ppis", 
+  "sfs", "sok", "tbgnn", "tfno's", "xeon", "xyzadademic", "wordcnn01"
+))
+glimpse(DS_Tidy)
+unigrams <- DS_Tidy %>%
+  unnest_tokens(word, text)  # Tokenizes the 'text' column into words
+glimpse(unigrams)
+filtered_unigrams <- unigrams %>%
+  anti_join(all_stop_words, by = "word")  # Removes rows where 'word' matches any stop word
+
+word_counts <- filtered_unigrams %>%
+  count(word, sort = TRUE)
+print(word_counts)
+
+bigrams <- DS_Tidy %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)  # Tokenize into bigrams
+glimpse(bigrams)
+filtered_bigrams <- bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%  # Split into individual words
+  filter(
+    !word1 %in% all_stop_words$word,  # Remove stop words from word1
+    !word2 %in% all_stop_words$word   # Remove stop words from word2
+  ) %>%
+  unite(bigram, word1, word2, sep = " ")  # Reassemble bigrams
+word_counts_bigrams <- filtered_bigrams %>%
+  count(bigram, sort = TRUE)
+
+print(word_counts_bigrams)
+trigrams <- DS_Tidy %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3)  # Tokenize into trigrams
+glimpse(trigrams)
+filtered_trigrams <- trigrams %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%  # Split into individual words
+  filter(
+    !word1 %in% all_stop_words$word,  # Remove stop words from word1
+    !word2 %in% all_stop_words$word,  # Remove stop words from word2
+    !word3 %in% all_stop_words$word   # Remove stop words from word3
+  ) %>%
+  unite(trigram, word1, word2, word3, sep = " ")  # Reassemble trigrams
+word_counts_trigrams <- filtered_trigrams %>%
+  count(trigram, sort = TRUE)
+
+print(word_counts_trigrams)
+
+
+
+For visual display 
+
+# Load the ggplot2 library for visualization
+library(ggplot2)
+
+# Select the top most frequent trigrams 
+top_trigrams <- trigram_counts %>%
+  top_n(N, wt = n) %>%   adjust N to display top 10 or top 5 
+  arrange(desc(n))       # Arrange in descending order
+
+# Create a bar plot
+ggplot(top_trigrams, aes(x = reorder(trigram, n), y = n)) +
+  geom_bar(stat = "identity", fill = "steelblue") +  # Bar chart
+  coord_flip() +                                   # Flip axes for better readability
+  labs(
+    title = "Top N Trigrams,  Bigrams, Unigrams  by Frequency",  # custom title 
+    x = "Trigrams, Bigrams , Unigrams", 
+    y = "Frequency"
+  ) +
+  theme_minimal()  # Apply a clean theme
